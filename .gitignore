@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Configuracion local: no subir credenciales ni variables personales.
+.env
+.env.*
+!.env.example
+src/main/resources/application-local.properties
