@@ -1,0 +1,21 @@
+# Pruebas manuales de la base, no de S01/S02.
+# Ejecutar scripts de esquema y datos antes de estas consultas.
+# Tambien pueden copiarse las URL en Postman.
+# curl.exe -i http://localhost:8080/contratos/9001
+
+### 200: contrato activo, fechaFin 2027-12-31 y enlace self
+GET http://localhost:8080/contratos/9001
+Accept: application/hal+json
+
+### 404: contrato inexistente en los fixtures
+GET http://localhost:8080/contratos/999999
+Accept: application/json
+
+### 400: identificador no numerico
+GET http://localhost:8080/contratos/abc
+Accept: application/json
+
+### 200: consulta historica de contrato eliminado (no habilita nuevas operaciones)
+GET http://localhost:8080/contratos/9003
+Accept: application/hal+json
+

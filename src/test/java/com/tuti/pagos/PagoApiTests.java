@@ -28,12 +28,13 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
-import com.tuti.common.exception.ConflictoNegocioException;
-import com.tuti.facturas.model.Factura;
-import com.tuti.facturas.service.FacturaPagoService;
-import com.tuti.pagos.dto.RegistrarPagoRequest;
-import com.tuti.pagos.model.MedioPago;
-import com.tuti.pagos.service.PagoService;
+
+import com.tuti.daos.common.exception.ConflictoNegocioException;
+import com.tuti.daos.dto.RegistrarPagoRequest;
+import com.tuti.daos.entities.Factura;
+import com.tuti.daos.service.impl.FacturaPagoServiceImpl;
+import com.tuti.daos.service.impl.PagoServiceImpl;
+import com.tuti.daos.utilidades.MedioPago;
 
 @SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:pagos-test;MODE=MySQL;DB_CLOSE_DELAY=-1")
 @AutoConfigureMockMvc
@@ -55,8 +56,8 @@ class PagoApiTests {
 
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
-    @Autowired PagoService service;
-    @MockitoSpyBean FacturaPagoService facturas;
+    @Autowired PagoServiceImpl service;
+    @MockitoSpyBean FacturaPagoServiceImpl facturas;
 
     @TestConfiguration
     static class RelojFijo {
@@ -230,7 +231,7 @@ class PagoApiTests {
 
     @Test
     void fallaDespuesDeAmbasEscriturasRevierteTodo() {
-        FacturaPagoService target = AopTestUtils.getUltimateTargetObject(facturas);
+        FacturaPagoServiceImpl target = AopTestUtils.getUltimateTargetObject(facturas);
         doAnswer(invocation -> {
             invocation.callRealMethod(); // Actualizacion real y flush de factura; el pago ya se inserto.
             throw new IllegalStateException("Falla inducida para comprobar rollback");
