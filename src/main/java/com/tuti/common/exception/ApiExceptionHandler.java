@@ -13,6 +13,12 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(DatosInvalidosException.class)
+    public ResponseEntity<ProblemDetail> datosInvalidos(DatosInvalidosException ex,
+            HttpServletRequest request) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(RecursoNoEncontradoException.class)
     public ResponseEntity<ProblemDetail> noEncontrado(RecursoNoEncontradoException ex,
             HttpServletRequest request) {

@@ -1,0 +1,453 @@
+{
+  "info": {
+    "name": "HogarYA - S02 Pagos - Alejandro",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Casos reproducibles S02. Preparar 01/02/03 SQL y usar fixtures nuevos; ejecutar en orden. No reiniciar ni borrar pagos en una base compartida. Ver docs/S02-PAGOS.md. No incluye aun el recorrido integrado S01-S02."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "pagoId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Registrar pago completo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos",
+        "description": "Requiere factura 9101 sin pago. Crea un pago y deja la factura PAGADA. Fecha por defecto: hoy.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"facturaId\": 9101,\n  \"medioPago\": \"TRANSFERENCIA\",\n  \"importePagado\": 250000,\n  \"interes\": 0\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) { const b=pm.response.json(); pm.collectionVariables.set(\"pagoId\", b.id); pm.test(\"Enlaces y Location\", () => { pm.expect(b._links.self.href).to.eql(pm.response.headers.get(\"Location\")); pm.expect(b._links.factura.href).to.include(\"/facturas/9101\"); }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Consultar pago por ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos/{{pagoId}}",
+        "description": "Ejecutar luego de 01; devuelve el pago creado y sus enlaces."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Factura asociada\", () => pm.expect(pm.response.json().facturaId).to.eql(9101));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Listar filtrando factura",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos?facturaId=9101",
+        "description": "Devuelve exactamente el pago de la factura 9101."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Filtro y self\", () => { const b=pm.response.json(); pm.expect(b._embedded.pagos).to.have.lengthOf(1); pm.expect(b._links.self.href).to.include(\"facturaId=9101\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Rechazo por interes negativo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos",
+        "description": "No debe guardar pagos ni modificar factura 9104.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"facturaId\": 9104,\n  \"medioPago\": \"TRANSFERENCIA\",\n  \"importePagado\": 250000,\n  \"interes\": -1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Rechazo por factura inexistente",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos",
+        "description": "El ID 999999 no debe existir en esta base de prueba.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"facturaId\": 999999,\n  \"medioPago\": \"TRANSFERENCIA\",\n  \"importePagado\": 250000,\n  \"interes\": 0\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Rechazo por segundo pago",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos",
+        "description": "Ejecutar luego de 01. Debe conservar el unico pago de 9101.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"facturaId\": 9101,\n  \"medioPago\": \"TRANSFERENCIA\",\n  \"importePagado\": 250000,\n  \"interes\": 0\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Rechazo por pago parcial",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos",
+        "description": "El importe no cubre la factura 9104. No debe persistir nada.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"facturaId\": 9104,\n  \"medioPago\": \"TRANSFERENCIA\",\n  \"importePagado\": 100000,\n  \"interes\": 0\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Rechazo por factura anulada",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos",
+        "description": "La factura 9103 permanece ANULADA y sin pago.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"facturaId\": 9103,\n  \"medioPago\": \"TRANSFERENCIA\",\n  \"importePagado\": 250000,\n  \"interes\": 0\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - Rechazo por fecha anterior a emision",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos",
+        "description": "9104 fue emitida el 2026-11-01. No debe guardar nada.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"facturaId\": 9104,\n  \"medioPago\": \"TRANSFERENCIA\",\n  \"importePagado\": 250000,\n  \"interes\": 0,\n  \"fechaPago\": \"2026-10-31\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - Pago de vencida con interes",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos",
+        "description": "9102 sin pago, importe base 250000. Guarda total 255000 e interes 5000; no cambia el importe base.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"facturaId\": 9102,\n  \"medioPago\": \"TRANSFERENCIA\",\n  \"importePagado\": 255000,\n  \"interes\": 5000\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 - Verificar que los rechazos no crearon pagos",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos?facturaId=9104",
+        "description": "Lista vacia luego de casos 04, 07 y 09."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Sin pagos parciales\", () => pm.expect(pm.response.json()._embedded.pagos).to.have.lengthOf(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 - Consultar pago inexistente",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos/999999",
+        "description": "El ID de pago 999999 no debe existir."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 - Confirmar que el duplicado no se guardo",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos?facturaId=9101",
+        "description": "Luego de 06 debe seguir existiendo un solo pago."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Un solo pago\", () => pm.expect(pm.response.json()._embedded.pagos).to.have.lengthOf(1));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
