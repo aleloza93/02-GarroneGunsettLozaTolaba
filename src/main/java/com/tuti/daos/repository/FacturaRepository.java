@@ -1,6 +1,6 @@
 package com.tuti.daos.repository;
 
-import java.time.YearMonth;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,6 +16,34 @@ import com.tuti.daos.utilidades.EstadoFactura;
 import jakarta.persistence.LockModeType;
 
 @Repository
+public interface FacturaRepository extends JpaRepository<Factura, Long> {
+
+    boolean existsByContratoIdAndPeriodoAndMensualTrueAndEstadoNot(
+            Long contratoId, String periodo, EstadoFactura estado);
+
+    @Query("""
+        SELECT f FROM Factura f
+        WHERE (:contratoId IS NULL OR f.contrato.id = :contratoId)
+          AND (:periodo IS NULL OR f.periodo = :periodo)
+          AND (:estado IS NULL OR f.estado = :estado)
+          AND (:vencidas IS NULL
+               OR (:vencidas = TRUE  AND f.fechaVencimiento <  :hoy)
+               OR (:vencidas = FALSE AND f.fechaVencimiento >= :hoy))
+        ORDER BY f.id DESC
+        """)
+    List<Factura> buscar(@Param("contratoId") Long contratoId,
+                         @Param("periodo") String periodo,
+                         @Param("estado") EstadoFactura estado,
+                         @Param("vencidas") Boolean vencidas,
+                         @Param("hoy") LocalDate hoy);
+    
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT f FROM Factura f WHERE f.id = :id")
+    Optional<Factura> buscarParaActualizar(@Param("id") Long id);
+}
+
+
+/*
 public interface FacturaRepository extends JpaRepository<Factura, Long> {
 
     // Listar todas las facturas ordenadas por ID.
@@ -43,4 +71,4 @@ public interface FacturaRepository extends JpaRepository<Factura, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT f FROM Factura f WHERE f.id = :id")
     Optional<Factura> findByIdParaPago(@Param("id") Long id);
-}
+}*/

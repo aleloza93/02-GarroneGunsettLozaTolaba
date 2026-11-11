@@ -13,5 +13,5 @@ public interface PagoService {
 
     PagoResponse consultar(Long id);
 
-    List<PagoResponse> listar(Long facturaId);
+    List<PagoResponse> buscarIdPorFactura(Long facturaId);
 }
