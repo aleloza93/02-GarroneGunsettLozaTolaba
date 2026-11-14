@@ -87,7 +87,7 @@ public class PagoController {
     public CollectionModel<?> listar(
             @Parameter(description = "ID positivo de la factura. Dejar vacio para listar todos.", example = "9101")
             @RequestParam(required = false) Long facturaId) {
-        var pagos = service.listar(facturaId).stream().map(this::representar).toList();
+        var pagos = service.buscarIdPorFactura(facturaId).stream().map(this::representar).toList();
         // Sin resultados queremos mostrar "pagos": [], no que desaparezca la coleccion del JSON.
         CollectionModel<?> model = pagos.isEmpty()
                 ? CollectionModel.of(java.util.List.of(new EmbeddedWrappers(false).emptyCollectionOf(PagoResponse.class)))

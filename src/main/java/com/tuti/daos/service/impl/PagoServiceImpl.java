@@ -25,7 +25,7 @@ import com.tuti.daos.service.PagoService;
 @Transactional(readOnly = true)
 public class PagoServiceImpl implements PagoService {
     private final PagoRepository repository;
-    private final FacturaPagoService facturas; // Usamos la interfaz en lugar de la implementación
+    private final FacturaPagoService facturas;
     private final Clock clock;
 
     public PagoServiceImpl(PagoRepository repository, FacturaPagoService facturas, Clock clock) {
@@ -39,8 +39,7 @@ public class PagoServiceImpl implements PagoService {
     @Transactional
     public PagoResponse registrar(@NotNull @Valid RegistrarPagoRequest request) {
         // Bloqueamos la factura para que dos solicitudes no la paguen al mismo tiempo.
-        Factura factura = facturas.obtenerParaPago(request.facturaId());
-        factura.verificarPagable();
+        Factura factura = facturas.obtenerParaPago(request.facturaId());        
         if (repository.existsByFactura_Id(factura.getId())) {
             throw new ConflictoNegocioException("La factura ya tiene un pago registrado.");
         }
@@ -73,7 +72,7 @@ public class PagoServiceImpl implements PagoService {
     }
 
     @Override
-    public List<PagoResponse> listar(Long facturaId) {
+    public List<PagoResponse> buscarIdPorFactura(Long facturaId) {
         // El filtro es opcional. Si no hay pago para esa factura, devolvemos una lista vacia.
         if (facturaId != null) {
             validarId(facturaId);
