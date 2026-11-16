@@ -1,0 +1,249 @@
+{
+  "info": {
+    "name": "S04 - Informes de resolucion (HogarYA)",
+    "description": "Casos de prueba reproducibles para S04 - Informes de resolucion. Requiere ejecutar previamente scripts/02-datos-contratos.sql y scripts/04-datos-prueba-informes.sql.",
+    "schema": "https://getpostman.com"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "informeId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Resolver incidente exitoso (201 Created)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "if (json.id) {",
+              "    pm.collectionVariables.set('informeId', json.id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"incidenteId\": 9201,\n  \"trabajoRealizado\": \"Se reemplazo el flexible de agua fria y se probo presion sin perdidas.\",\n  \"costo\": 18500.00,\n  \"observaciones\": \"Queda en garantia por 6 meses.\",\n  \"responsable\": \"Carlos Gomez\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/informes-resolucion",
+          "host": ["{{baseUrl}}"],
+          "path": ["informes-resolucion"]
+        }
+      }
+    },
+    {
+      "name": "02 - Consultar informe por ID (200 OK)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/informes-resolucion/{{informeId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["informes-resolucion", "{{informeId}}"]
+        }
+      }
+    },
+    {
+      "name": "03 - Listar informes filtrados por incidenteId (200 OK)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/informes-resolucion?incidenteId=9201",
+          "host": ["{{baseUrl}}"],
+          "path": ["informes-resolucion"],
+          "query": [
+            {
+              "key": "incidenteId",
+              "value": "9201"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "04 - Rechazo por datos invalidos: costo negativo y campos vacios (400 Bad Request)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"incidenteId\": 9202,\n  \"trabajoRealizado\": \"\",\n  \"costo\": -500.00,\n  \"responsable\": \"\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/informes-resolucion",
+          "host": ["{{baseUrl}}"],
+          "path": ["informes-resolucion"]
+        }
+      }
+    },
+    {
+      "name": "05 - Rechazo por incidente inexistente (404 Not Found)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"incidenteId\": 999999,\n  \"trabajoRealizado\": \"Revision general de instalacion\",\n  \"costo\": 0,\n  \"responsable\": \"Carlos Gomez\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/informes-resolucion",
+          "host": ["{{baseUrl}}"],
+          "path": ["informes-resolucion"]
+        }
+      }
+    },
+    {
+      "name": "06 - Rechazo por conflicto: incidente ABIERTO no EN_PROCESO (409 Conflict)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 409 Conflict', function () {",
+              "    pm.response.to.have.status(409);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"incidenteId\": 9203,\n  \"trabajoRealizado\": \"Intento de resolver incidente que sigue abierto\",\n  \"costo\": 0,\n  \"responsable\": \"Carlos Gomez\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/informes-resolucion",
+          "host": ["{{baseUrl}}"],
+          "path": ["informes-resolucion"]
+        }
+      }
+    },
+    {
+      "name": "07 - Resolver segundo incidente con costo 0 (201 Created)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"incidenteId\": 9202,\n  \"trabajoRealizado\": \"Se rearmo la llave termica y se verifico carga en tablero.\",\n  \"costo\": 0,\n  \"responsable\": \"Laura Mendez\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/informes-resolucion",
+          "host": ["{{baseUrl}}"],
+          "path": ["informes-resolucion"]
+        }
+      }
+    }
+  ]
+}
