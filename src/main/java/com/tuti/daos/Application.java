@@ -11,6 +11,7 @@ Loza Alejandro
 Integrantes:
 Loza alejandro - alejandro.loza93@gmail.com
 
+Garrone Leandro - garronlean@gmail.com
 
 */
 
