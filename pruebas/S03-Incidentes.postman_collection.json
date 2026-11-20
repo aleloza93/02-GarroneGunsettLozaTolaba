@@ -1,0 +1,783 @@
+{
+  "info": {
+    "name": "S03 - Incidentes (HogarYA)",
+    "description": "Casos de prueba reproducibles para S03 - Incidentes y recorrido integrador de mantenimiento (S03 + S04). Requiere ejecutar previamente scripts/02-datos-contratos.sql y scripts/03-datos-prueba-incidentes.sql. Ejecutar los casos en orden.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "incidenteId",
+      "value": "9101"
+    },
+    {
+      "key": "recorridoId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "S03 - Casos obligatorios y adicionales",
+      "item": [
+        {
+          "name": "01 - Registrar incidente (201 Created)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('Estado inicial ABIERTO', () => pm.expect(json.estado).to.eql('ABIERTO'));",
+                  "pm.test('Links HATEOAS', () => { pm.expect(json._links.self).to.exist; pm.expect(json._links.contrato).to.exist; pm.expect(json._links.informes).to.exist; });",
+                  "pm.collectionVariables.set('incidenteId', json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/incidentes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidentes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contratoId\": 9001,\n  \"titulo\": \"Perdida de agua en lavadero\",\n  \"descripcion\": \"Gotea la conexion de la canilla del lavarropas\",\n  \"categoria\": \"PLOMERIA\",\n  \"prioridad\": \"ALTA\"\n}"
+            },
+            "description": "Alta sobre el contrato 9001 (activo y vigente). Devuelve 201, Location y el incidente en estado ABIERTO."
+          }
+        },
+        {
+          "name": "02 - Consultar incidente por ID (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/incidentes/{{incidenteId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidentes",
+                "{{incidenteId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "03 - Listar incidentes filtrando por contrato y estado (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('Todos ABIERTO', () => json._embedded.incidentes.forEach(i => pm.expect(i.estado).to.eql('ABIERTO')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/incidentes?contratoId=9001&estado=ABIERTO",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidentes"
+              ],
+              "query": [
+                {
+                  "key": "contratoId",
+                  "value": "9001"
+                },
+                {
+                  "key": "estado",
+                  "value": "ABIERTO"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "04 - Rechazo por datos invalidos: titulo vacio y sin categoria (400 Bad Request)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/incidentes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidentes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contratoId\": 9001,\n  \"titulo\": \"\",\n  \"descripcion\": \"Sin categoria\",\n  \"prioridad\": \"MEDIA\"\n}"
+            }
+          }
+        },
+        {
+          "name": "05 - Rechazo por contrato inexistente (404 Not Found)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/incidentes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidentes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contratoId\": 999999,\n  \"titulo\": \"Contrato inexistente\",\n  \"descripcion\": \"No deberia registrarse\",\n  \"categoria\": \"GENERAL\",\n  \"prioridad\": \"BAJA\"\n}"
+            }
+          }
+        },
+        {
+          "name": "06 - Rechazo por transicion no permitida: CANCELADO -> EN_PROCESO (409 Conflict)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/incidentes/9104/estado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidentes",
+                "9104",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"EN_PROCESO\"\n}"
+            },
+            "description": "El incidente 9104 (script 03) esta CANCELADO y no admite nuevas transiciones."
+          }
+        },
+        {
+          "name": "07 - Iniciar atencion: ABIERTO -> EN_PROCESO (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Queda EN_PROCESO', () => pm.expect(pm.response.json().estado).to.eql('EN_PROCESO'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/incidentes/{{incidenteId}}/estado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidentes",
+                "{{incidenteId}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"EN_PROCESO\"\n}"
+            }
+          }
+        },
+        {
+          "name": "08 - Rechazo: resolver por PATCH en vez de S04 (409 Conflict)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/incidentes/{{incidenteId}}/estado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidentes",
+                "{{incidenteId}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"RESUELTO\"\n}"
+            }
+          }
+        },
+        {
+          "name": "09 - Consultar historial de estados (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const h = pm.response.json()._embedded.historial;",
+                  "pm.test('Historial ABIERTO -> EN_PROCESO', () => { pm.expect(h.length).to.eql(2); pm.expect(h[0].estadoAnterior).to.eql(null); pm.expect(h[1].estadoNuevo).to.eql('EN_PROCESO'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/incidentes/{{incidenteId}}/historial",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidentes",
+                "{{incidenteId}}",
+                "historial"
+              ]
+            }
+          }
+        },
+        {
+          "name": "10 - Consultar incidente inexistente (404 Not Found)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/incidentes/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidentes",
+                "999999"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recorrido integrador de mantenimiento",
+      "item": [
+        {
+          "name": "R1 - Registrar incidente (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.collectionVariables.set('recorridoId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/incidentes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidentes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contratoId\": 9001,\n  \"titulo\": \"Calefon no enciende\",\n  \"descripcion\": \"El piloto se apaga al abrir el agua caliente\",\n  \"categoria\": \"GAS\",\n  \"prioridad\": \"ALTA\"\n}"
+            }
+          }
+        },
+        {
+          "name": "R2 - Iniciar atencion: EN_PROCESO (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/incidentes/{{recorridoId}}/estado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidentes",
+                "{{recorridoId}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"EN_PROCESO\"\n}"
+            }
+          }
+        },
+        {
+          "name": "R3 - Resolver con primer informe (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/informes-resolucion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "informes-resolucion"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"incidenteId\": {{recorridoId}},\n  \"trabajoRealizado\": \"Cambio de termocupla\",\n  \"costo\": 12000.0,\n  \"responsable\": \"Carlos Gomez\"\n}"
+            }
+          }
+        },
+        {
+          "name": "R4 - Reabrir: REABIERTO (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/incidentes/{{recorridoId}}/estado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidentes",
+                "{{recorridoId}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"REABIERTO\"\n}"
+            }
+          }
+        },
+        {
+          "name": "R5 - Volver a atender: EN_PROCESO (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/incidentes/{{recorridoId}}/estado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidentes",
+                "{{recorridoId}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"EN_PROCESO\"\n}"
+            }
+          }
+        },
+        {
+          "name": "R6 - Resolver con segundo informe (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/informes-resolucion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "informes-resolucion"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"incidenteId\": {{recorridoId}},\n  \"trabajoRealizado\": \"Cambio de valvula de gas\",\n  \"costo\": 12000.0,\n  \"responsable\": \"Carlos Gomez\"\n}"
+            }
+          }
+        },
+        {
+          "name": "R7 - Rechazo: tercer informe con el incidente RESUELTO (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/informes-resolucion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "informes-resolucion"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"incidenteId\": {{recorridoId}},\n  \"trabajoRealizado\": \"Intento duplicado\",\n  \"costo\": 12000.0,\n  \"responsable\": \"Carlos Gomez\"\n}"
+            }
+          }
+        },
+        {
+          "name": "R8 - Se conservan ambos informes (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Exactamente 2 informes (el rechazado no dejo registro)', () => pm.expect(pm.response.json()._embedded.informes.length).to.eql(2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/informes-resolucion?incidenteId={{recorridoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "informes-resolucion"
+              ],
+              "query": [
+                {
+                  "key": "incidenteId",
+                  "value": "{{recorridoId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "R9 - Historial completo (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const h = pm.response.json()._embedded.historial.map(x => x.estadoNuevo);",
+                  "pm.test('Secuencia completa', () => pm.expect(h).to.eql(['ABIERTO','EN_PROCESO','RESUELTO','REABIERTO','EN_PROCESO','RESUELTO']));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/incidentes/{{recorridoId}}/historial",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidentes",
+                "{{recorridoId}}",
+                "historial"
+              ]
+            }
+          }
+        },
+        {
+          "name": "R10 - Acceder a los informes via HATEOAS desde el incidente (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('Estado final RESUELTO', () => pm.expect(json.estado).to.eql('RESUELTO'));",
+                  "pm.test('Link informes', () => pm.expect(json._links.informes.href).to.include('incidenteId='));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/incidentes/{{recorridoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidentes",
+                "{{recorridoId}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
