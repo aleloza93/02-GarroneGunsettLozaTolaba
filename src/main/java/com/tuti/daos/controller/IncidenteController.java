@@ -40,7 +40,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/incidentes")
-@Tag(name = "S03 - Incidentes", description = "Registro, consulta y seguimiento de incidentes de mantenimiento")
+@Tag(name = "Incidentes", description = "S03 - Registro, consulta y seguimiento de incidentes de mantenimiento")
 public class IncidenteController {
 
     private final IncidenteService service;
